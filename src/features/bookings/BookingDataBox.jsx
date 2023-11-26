@@ -115,10 +115,20 @@ function BookingDataBox({ booking }) {
     hasBreakfast,
     observations,
     isPaid,
-    guests: { fullName: guestName, email, country, countryFlag, nationalID },
-    cabins: { name: cabinName },
-  } = booking;
+    guests,
+    cabins,
+  } = booking || {};
 
+  const {
+    fullName: guestName,
+    email,
+    country,
+    countryFlag,
+    nationalID,
+  } = guests || {};
+
+  const { name: cabinName } = cabins || {};
+  if (!Object.keys(booking || {})?.length) return;
   return (
     <StyledBookingDataBox>
       <Header>
@@ -129,13 +139,15 @@ function BookingDataBox({ booking }) {
           </p>
         </div>
 
-        <p>
-          {format(new Date(startDate), "EEE, MMM dd yyyy")} (
-          {isToday(new Date(startDate))
-            ? "Today"
-            : formatDistanceFromNow(startDate)}
-          ) &mdash; {format(new Date(endDate), "EEE, MMM dd yyyy")}
-        </p>
+        {startDate && endDate && (
+          <p>
+            {format(new Date(startDate), "EEE, MMM dd yyyy")} (
+            {isToday(new Date(startDate))
+              ? "Today"
+              : formatDistanceFromNow(startDate)}
+            ) &mdash; {format(new Date(endDate), "EEE, MMM dd yyyy")}
+          </p>
+        )}
       </Header>
 
       <Section>

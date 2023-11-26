@@ -1,7 +1,38 @@
 import { getToday } from "../utils/helpers";
 import supabase from "./supabase";
+import { PAGE_SIZE } from "../utils/constants";
+
+export async function getBookings({ filter, sortBy, page }) {
+  let query = supabase
+    .from("bookings")
+    .select(
+      "id,created_at,startDate,endDate,numNights, numGuests, status,cabinPrice,extrasPrice,totalPrice , cabins(name), guests(fullName, email)",
+      { count: "exact" }
+    );
+  if (filter !== null)
+    query = query[filter.method || "eq"](filter.field, filter.value);
+
+  if (sortBy)
+    query = query.order(sortBy.field, {
+      ascending: sortBy.direction === "asc",
+    });
+  if (page) {
+    const from = (page - 1) * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+    query = query.range(from, to);
+  }
+  //.select("*, cabins(*), guests(*)");
+
+  const { data, error, count } = await query;
+  if (error) {
+    console.error(error);
+    throw new Error("Bookings could not be loaded");
+  }
+  return { data, count };
+}
 
 export async function getBooking(id) {
+  if (!id) return null;
   const { data, error } = await supabase
     .from("bookings")
     .select("*, cabins(*), guests(*)")
@@ -58,7 +89,7 @@ export async function getStaysTodayActivity() {
       `and(status.eq.unconfirmed,startDate.eq.${getToday()}),and(status.eq.checked-in,endDate.eq.${getToday()})`
     )
     .order("created_at");
-
+  console.log("getStaysTodayActivity", data);
   // Equivalent to this. But by querying this, we only download the data we actually need, otherwise we would need ALL bookings ever created
   // (stay.status === 'unconfirmed' && isToday(new Date(stay.startDate))) ||
   // (stay.status === 'checked-in' && isToday(new Date(stay.endDate)))
@@ -75,8 +106,7 @@ export async function updateBooking(id, obj) {
     .from("bookings")
     .update(obj)
     .eq("id", id)
-    .select()
-    .single();
+    .select();
 
   if (error) {
     console.error(error);
